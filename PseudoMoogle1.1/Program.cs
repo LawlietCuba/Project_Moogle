@@ -12,18 +12,10 @@ Query Results = new Query(query, Documentos);
 var Ranking = Results.GetRankingList();
 int count = Results.GetHowManyResults();
 
-foreach(var kvp in Results.GetQTFIDF()) {
-    System.Console.WriteLine(kvp.Key + " " + kvp.Value);
-}
-
 foreach(var v in Ranking) {
-    if(count-- > 0){
-        //System.Console.WriteLine(Documentos.TheDocuments[v.Value].GetTitle() + " " + v.Key);
+    if(v.Key != 0) {
+        System.Console.WriteLine(Documentos.TheDocuments[v.Value].GetTitle() + " " + v.Key);
+        System.Console.WriteLine(Results.GetSnippet(v.Value));
     }
-    else break;
 }
-//System.Console.WriteLine("Quizas quisiste decir " + Results.GetSuggestion());
-
-foreach(string str in Results.GetOperExcla()) {
-    //System.Console.WriteLine(str);
-}
+System.Console.WriteLine("Quizas quisiste decir " + Results.GetSuggestion());

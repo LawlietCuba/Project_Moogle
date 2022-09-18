@@ -1,4 +1,6 @@
 namespace MyMoogleEngine;
+
+using System.Text.RegularExpressions;   
 public class Query
 {
     private string query;
@@ -7,21 +9,12 @@ public class Query
     private List<KeyValuePair< double,int >> RankingList;
     private int HowManyResults;                                 
     private string Suggestion;
-    private List<string> OperExcla;                    // Lista de string con !
-    private List<string> OperPow;                      // Lista de string con ^
-    private Dictionary<string, string> OperClosen;     //Lista de string con ~ (cercania)
-    private Dictionary<string, int> OperAster;         // Lista de pares de string con *
+    private Dictionary<string,string> Closeness;
+    private List<string> Pow;
+    private Dictionary<int,string> TheSnippets;
     public Query(string query, AllDocuments Docs) {
-        // Instanciamos cada una de las variables de los operadores
-        this.OperExcla = new List<string>();
-        this.OperPow = new List<string>();
-        this.OperClosen = new Dictionary<string, string>();
-        this.OperAster = new Dictionary<string, int>();
-      
-
         this.query = query;
         this.TokensQ = ProcessQuery(this.query);
-        FindTheOperators(TokensQ);
 
         this.qTFIDF = MakeQueryTFxIDF(this.TokensQ, Docs.IDF);
 
@@ -32,12 +25,17 @@ public class Query
         // 3. Exclamacion
         // PD : Potencia solo nos afectara en la cantidad de documentos que devolvemos al usuario
 
-        AppliAster(qTFIDF);
+        this.Closeness = new Dictionary<string, string>();
+        this.Pow = new List<string>();
+        DoOperators(query);
 
-        this.HowManyResults = 0;
         this.RankingList = new List<KeyValuePair<double, int>>();
         Search(Docs);
+        this.HowManyResults = CountResults();
         this.Suggestion = GiveASuggestion(Docs);
+
+        this.TheSnippets = new Dictionary<int, string>();
+        CreateSnippets(Docs);
     } 
 
     public string GetSuggestion() {
@@ -52,81 +50,88 @@ public class Query
         return HowManyResults;
     }
 
-    public List<string> GetOperExcla() {
-        return OperExcla;
-    }
-    public List<string> GetOperPow() {
-        return OperPow;
-    }
-    public Dictionary<string, string> GetOperClosen() {
-        return OperClosen;
-    }
-    public Dictionary<string, int> GetOperAster() {
-        return OperAster;
-    }
-
     public Dictionary<string,double> GetQTFIDF() {
         return qTFIDF;
+    }
+    public string GetSnippet(int j) {
+        return TheSnippets[j];
     }
     static private string[] ProcessQuery(string query) { 
         
         // Normalizar la query       
         char[] separators = new char[] { ' ', '.', ',', ':', ';', '/', '`', '-', '(', ')','#',
-        '@', '$', '%', '&', '_', '+', '=', '<', '>'};
+        '@', '$', '%', '&', '_', '+', '=', '<', '>', '*', '^', '!', '~'};
         string[] subsequences = query.Split(separators, StringSplitOptions.RemoveEmptyEntries);
 
-        string[] Modified = new string[subsequences.Length];
-        for(int i=0; i<Modified.Length; i++) {
-            Modified[i] = subsequences[i].ToLower();
+        for(int i=0; i<subsequences.Length; i++) {
+            subsequences[i] = TokenizeWord(subsequences[i]);           
         }
         
-        // Busquemos los operadores en la query  
-
-        return Modified;
+        return subsequences;
     }
 
-    private void FindTheOperators(string[] WordsTokenized) {
-        // PENDIENTE: Leer bien y la palabra cuando tenga dos operadores distintos
-        // ------------------------------------------------------------------------------------
-        // ------------------------------------------------------------------------------------
+    static string TokenizeWord(string word) {
+        word = word.ToLower();
 
-        for(int i=0; i<WordsTokenized.Length; i++) {
-            for(int j=0; j<WordsTokenized[i].Length; j++) {
-                if(WordsTokenized[i][j] == '!' && !OperExcla.Contains(SaveThatWord(WordsTokenized[i], '!'))) {
-                    OperExcla.Add(SaveThatWord(WordsTokenized[i], '!'));
-                }
-                if(WordsTokenized[i][j] == '^' && !OperPow.Contains(SaveThatWord(WordsTokenized[i], '^'))) {
-                    OperPow.Add(SaveThatWord(WordsTokenized[i], '^'));
-                }
-                if(WordsTokenized[i][j] == '*' && !OperAster.ContainsKey(SaveThatWord(WordsTokenized[i], '*'))) {
-                    OperAster.Add(SaveThatWord(WordsTokenized[i], '*'), CountAster(WordsTokenized[i], '*'));
-                }
-                if(WordsTokenized[i][j] == '~' && i-1 > 0 && i+1 <WordsTokenized[i].Length && !OperClosen.ContainsKey(SaveThatWord(WordsTokenized[i-1], ' '))) {
-                    OperClosen.Add(SaveThatWord(WordsTokenized[i-1], ' '), SaveThatWord(WordsTokenized[i+1], ' '));
-                }
-            }
-        }
-    }
-    private static string SaveThatWord(string str, char target) {
-        string word = "";
-        for(int j = 0; j < str.Length; j++) {
-            if(str[j] != target) {
-                word += str[j];
-            }
-        }
+        word = word.Replace('á', 'a');
+        word = word.Replace('é', 'e');
+        word = word.Replace('í', 'i');
+        word = word.Replace('ó', 'o');
+        word = word.Replace('ú', 'u');  
 
         return word;
     }
 
-    private static int CountAster(string str, char target) {
-        int count = 0;
-        for(int j = 0; j<str.Length; j++) {
-            if(str[j] == target) {
+    private void DoOperators(string text) {
+        //Asteriscos
 
-            }
+        Regex aster = new Regex(@"(\*+)\s*(\w+)");
+
+        MatchCollection matches = aster.Matches(text);
+
+        foreach(Match m in matches) {
+            GroupCollection groups = m.Groups;
+            string target = TokenizeWord(groups[2].ToString());
+            qTFIDF[target] *= (1 + 0.1*groups[1].Length);
         }
 
-        return count;
+        //Operador de cercania
+
+        Regex closen = new Regex(@"(\w+)\s*~\s*(\w+)");
+
+        matches = closen.Matches(text);
+
+        foreach(Match m in matches) {
+            GroupCollection groups = m.Groups;
+            string target1 = TokenizeWord(groups[1].ToString());
+            string target2 = TokenizeWord(groups[2].ToString());
+
+            Closeness.Add(target1, target2);
+        }
+
+        // Exclamation
+
+        Regex excla = new Regex(@"\s+(\!+)\s*(\w+)");
+
+        matches = excla.Matches(text);
+
+        foreach(Match m in matches) {
+            GroupCollection groups = m.Groups;
+            string target = TokenizeWord(groups[2].ToString());
+            qTFIDF[target] = 0;
+        }
+
+        // Pow
+
+        Regex pow = new Regex(@"\s+(\^+)\s*(\w+)");
+
+        matches = pow.Matches(text);
+
+        foreach(Match m in matches) {
+            GroupCollection group = m.Groups;
+            string target = TokenizeWord(group[2].ToString());
+            Pow.Add(target);
+        }
     }
     
     // Hacer el TF-IDF de la query
@@ -177,13 +182,46 @@ public class Query
         return (a + (1 - a) * freq * idf);
     }
 
-    private void  Search(AllDocuments Docs) {
+    private void Search(AllDocuments Docs) {
         for(int j = 0; j<Docs.TheDocuments.Length; j++){
             // Creamos el vector correspondiente a la query de cada documento
             var CorresVector = Docs.TheDocuments[j].CreateVectorDoc(qTFIDF, Docs.IDF);
             // Calculamos el score
-            var Score = CalculateScore(CorresVector, qTFIDF);
-            if(Score != 0){
+            double Score = CalculateScore(CorresVector, qTFIDF);
+            if(Score > 0){
+                // Si el score es distinto de cero significa que al menos una de las palabras de la
+                // query estan en el documento
+
+                // Aqui aplicaremos el operador de cercania
+
+                if(Closeness.Count != 0) {
+                    foreach(var kvp in Closeness) {
+                        
+                        var lis1 = AllIndexesOf(Docs.TheDocuments[j].GetText(), kvp.Key);
+                        var lis2 = AllIndexesOf(Docs.TheDocuments[j].GetText(), kvp.Value);
+
+                        double Min_Dist = int.MaxValue;
+                        foreach(int x in lis1) {
+                            foreach(int y in lis2) {
+                                Min_Dist = Math.Min(Math.Abs(x-y), Min_Dist);
+                            }
+                        }
+
+                        // Utilizando la funcion 1/x...
+                        if(Min_Dist != int.MaxValue) {
+                            // 10 es escogido arbitrariamente para ser la distancia promedio entre 
+                            // dos palabras que deberian estar juntas en el texto segun la busqueda
+                            // Podria hacerse una AI por progresion lineal que de un valor aproximado
+                            // usando linear_regresion
+
+                            //combate ~ aliados
+
+                            Score *= (1+10/Min_Dist);
+                            
+                        }
+                    }                
+                }
+
                 RankingList.Add(new KeyValuePair<double, int>(Score, j));
                 HowManyResults++;
             }  
@@ -192,6 +230,18 @@ public class Query
 
         RankingList.Sort((x,y) => x.Key.CompareTo(y.Key));
         RankingList.Reverse();
+    }
+
+    private List<int> AllIndexesOf(string str, string value) {
+        if (String.IsNullOrEmpty(value))
+            throw new ArgumentException("the string to find may not be empty", "value");
+        List<int> indexes = new List<int>();
+        for (int index = 0;; index += value.Length) {
+            index = str.IndexOf(value, index);
+            if (index == -1)
+                return indexes;
+            indexes.Add(index);
+        }
     }
 
     private double CalculateScore(Dictionary<string,double> Vector, Dictionary<string,
@@ -210,7 +260,23 @@ public class Query
         }
 
         if(ModVector == 0) return 0;
-        return ScalarProduct / ( Math.Sqrt(ModVector) * Math.Sqrt(ModQuery) );
+
+        double value = ScalarProduct / ( Math.Sqrt(ModVector) * Math.Sqrt(ModQuery) );
+
+        // Ahora apliquemos el operador de potencia
+
+        bool Pow_test = true;
+        if(Pow.Count != 0) {
+            foreach(string s in Pow) {
+                if(!Vector.ContainsKey(s)) {
+                    Pow_test = false;
+                }
+            }
+        }
+
+        if(Pow_test == false) value = 0;
+
+        return value;
         
     }
     
@@ -261,6 +327,103 @@ public class Query
 
         return theSug;
     }
+
+    private void CreateSnippets(AllDocuments Docs) {
+        foreach(var kvp in RankingList) {
+            if(kvp.Key == 0) continue;
+            string text = Docs.TheDocuments[kvp.Value].GetText();
+
+            // Para elaborar el snippet, se tomara la primera palabra mas
+            // importante de la query de la query con la segunda palabra mas relevate de la query
+            // y si ambas aparecen en el documento se buscara elaborar el snippet con ellas
+            // Si no aparecen dos palabras de la query en el documento se repetira el mismo proceso
+            // pero con una sola palabra
+
+            bool GotSnippet = false;
+
+            // Dos palabras
+            double val1 = 0;
+            string str1 = "";
+            
+            var check1 = new List<string>();
+            foreach(var kv in qTFIDF) {
+                if(check1.Contains(kv.Key)) continue;
+                if(val1 < kv.Value) {
+                    str1 = kv.Key;
+                    val1 = kv.Value;
+                }
+                val1 = 0;
+                check1.Add(str1);
+                
+                double val2 = 0;
+                string str2 = "";
+                var check2 = new List<string>();
+                foreach(var kv2 in qTFIDF) {
+                    if(check1.Contains(kv2.Key) || check2.Contains(kv2.Key)) continue;
+                    if(val2 < kv2.Value) {
+                        str2 = kv2.Key;
+                        val2 = kv2.Value;
+                    }
+
+                    val2 = 0;
+                    check2.Add(str2);
+
+                    if(text.Contains(str1) && text.Contains(str2)) {
+                        Regex snippet = new Regex(@"\w*\s+" + (str1) + @".*" + (str2) + @".*");
+
+                        Match match = snippet.Match(text);
+
+                        if(match.Success){
+                            TheSnippets.Add(kvp.Value, match.ToString());
+                            GotSnippet = true;
+                            break;
+                        }
+
+                        Regex snippet2 = new Regex(@"\w*\s+" + (str2) + @".*" + (str1) + @".*");
+
+                        Match match2 = snippet2.Match(text);
+
+                        if(match2.Success){
+                            TheSnippets.Add(kvp.Value, match2.ToString());
+                            GotSnippet = true;
+                            break;
+                        }
+                    }
+                }
+
+                if(GotSnippet == true) break;
+                else {
+                    // Una palabra
+                    var check3 = new List<string>();
+                    double val3 = 0;
+                    string str3 = "";
+                    
+                    foreach(var kv3 in qTFIDF) {
+                        if(check3.Contains(kv3.Key)) continue;
+                        if(val3 < kv3.Value) {
+                            str3 = kv3.Key;
+                            val3 = kv3.Value;
+                        }
+                    
+                        val3 = 0;
+                        check3.Add(str3);
+
+                        Regex snippet3 = new Regex(@"\w*\s+"+ str3 + @".*");
+
+                        Match match3 = snippet3.Match(text);
+
+                        if(match3.Success){
+                            TheSnippets.Add(kvp.Value, match3.ToString());
+                            GotSnippet = true;
+                            break;
+                        }
+                    }
+
+                    break;
+                }
+            } 
+        }
+    }
     int EditDistance(string source, string target){
         if(string.IsNullOrEmpty(source)){
             if(string.IsNullOrEmpty(target)) return 0;
@@ -296,12 +459,13 @@ public class Query
         return distance[currentRow, m];
     }
 
-    private void AppliAster(Dictionary<string,double> qTFIDF) {
-        foreach(var kvp in OperAster) {
-            if(qTFIDF.ContainsKey(kvp.Key)) {
-                qTFIDF[kvp.Key] += (OperAster[kvp.Key] / 10 ) * 0.2;
-            }
+    private int CountResults() {
+        int count = 0;
+        foreach(var kvp in RankingList) {
+            if(kvp.Key != 0) count++;
         }
+
+        return count;
     }
 }
 

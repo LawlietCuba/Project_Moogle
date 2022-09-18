@@ -12,10 +12,20 @@ Query Results = new Query(query, Documentos);
 var Ranking = Results.GetRankingList();
 int count = Results.GetHowManyResults();
 
+int AmountToShow = Math.Min(count, 10);
+int counter = 1;
+
 foreach(var v in Ranking) {
     if(v.Key != 0) {
-        System.Console.WriteLine(Documentos.TheDocuments[v.Value].GetTitle() + " " + v.Key);
-        System.Console.WriteLine(Results.GetSnippet(v.Value));
+        System.Console.WriteLine(counter + ". " + Documentos.TheDocuments[v.Value].GetTitle() + " " + v.Key);
+        if(Results.GetSnippet().ContainsKey(v.Value)) {
+            System.Console.WriteLine(Results.GetSnippet(v.Value));
+        }
     }
+    counter++;
+    if(counter > AmountToShow) break;
 }
-System.Console.WriteLine("Quizas quisiste decir " + Results.GetSuggestion());
+
+if(counter <= 10) {
+    System.Console.WriteLine("Quizas quisiste decir " + Results.GetSuggestion());
+}

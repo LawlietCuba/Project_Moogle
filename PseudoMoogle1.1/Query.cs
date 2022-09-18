@@ -56,6 +56,10 @@ public class Query
     public string GetSnippet(int j) {
         return TheSnippets[j];
     }
+
+    public Dictionary<int,string> GetSnippet() {
+        return TheSnippets;
+    }
     static private string[] ProcessQuery(string query) { 
         
         // Normalizar la query       
@@ -348,7 +352,7 @@ public class Query
             var check1 = new List<string>();
             foreach(var kv in qTFIDF) {
                 if(check1.Contains(kv.Key)) continue;
-                if(val1 < kv.Value) {
+                if(val1 <= kv.Value) {
                     str1 = kv.Key;
                     val1 = kv.Value;
                 }
@@ -360,7 +364,7 @@ public class Query
                 var check2 = new List<string>();
                 foreach(var kv2 in qTFIDF) {
                     if(check1.Contains(kv2.Key) || check2.Contains(kv2.Key)) continue;
-                    if(val2 < kv2.Value) {
+                    if(val2 <= kv2.Value) {
                         str2 = kv2.Key;
                         val2 = kv2.Value;
                     }
@@ -368,8 +372,11 @@ public class Query
                     val2 = 0;
                     check2.Add(str2);
 
+                    // System.Console.WriteLine("Documento: " + Docs.TheDocuments[kvp.Value].GetTitle());
+                    // System.Console.WriteLine("Buscando las palabras: " + str1 + " y " + str2);
                     if(text.Contains(str1) && text.Contains(str2)) {
-                        Regex snippet = new Regex(@"\w*\s+" + (str1) + @".*" + (str2) + @".*");
+
+                        Regex snippet = new Regex(@"\w*\s+" + (str1) + @"\s+.*" + (str2) + @"\s+.*", RegexOptions.IgnoreCase);
 
                         Match match = snippet.Match(text);
 
@@ -379,7 +386,7 @@ public class Query
                             break;
                         }
 
-                        Regex snippet2 = new Regex(@"\w*\s+" + (str2) + @".*" + (str1) + @".*");
+                        Regex snippet2 = new Regex(@"\w*\s+" + (str2) + @"\s+.*" + (str1) + @"\s+.*", RegexOptions.IgnoreCase);
 
                         Match match2 = snippet2.Match(text);
 
@@ -408,7 +415,7 @@ public class Query
                         val3 = 0;
                         check3.Add(str3);
 
-                        Regex snippet3 = new Regex(@"\w*\s+"+ str3 + @".*");
+                        Regex snippet3 = new Regex(@"\w*\s+"+ str3 + @"\s+.*", RegexOptions.IgnoreCase);
 
                         Match match3 = snippet3.Match(text);
 

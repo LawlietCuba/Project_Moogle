@@ -361,6 +361,8 @@ public class Query
                     str1 = kv.Key;
                     val1 = kv.Value;
                 }
+                else continue;
+
                 val1 = 0;
                 check1.Add(str1);
                 
@@ -373,13 +375,14 @@ public class Query
                         str2 = kv2.Key;
                         val2 = kv2.Value;
                     }
+                    else continue;
 
                     val2 = 0;
                     check2.Add(str2);
 
                     if(text.Contains(str1) && text.Contains(str2) && str1 != "" && str2 != "") {
-                        System.Console.WriteLine("Documento: " + Docs.TheDocuments[kvp.Value].GetTitle());
-                        System.Console.WriteLine("Buscando las palabras: " + str1 + " y " + str2);
+                        // System.Console.WriteLine("Documento: " + Docs.TheDocuments[kvp.Value].GetTitle());
+                        // System.Console.WriteLine("Buscando las palabras: " + str1 + " y " + str2);
 
                         Regex snippet = new Regex(@"\w*\W+" + (str1) + @"\s+.*" + (str2) + @"(\W+\w+){10}", RegexOptions.IgnoreCase);
 
@@ -411,20 +414,25 @@ public class Query
                         Match match4 = snippet4.Match(text);
 
                         Regex snippet5 = new Regex(@"\w*\W+"+ str2 + @"(\W+\w+){10}", RegexOptions.IgnoreCase);
+
                         Match match5 = snippet5.Match(text);
 
-                        if(match4.Index <= match5.Index) {
-                            CombinedSnippet += match4.ToString() + " (...) " + match5.ToString();
-                        }
-                        else {
-                            CombinedSnippet += match5.ToString() + " (...) " + match4.ToString();
+                        if(match4.Success && match5.Success) {
+                            if(match4.Index <= match5.Index) {
+                                CombinedSnippet += (match4.ToString() + " (...) " + match5.ToString());
+                            }
+                            else {
+                                CombinedSnippet += (match5.ToString() + " (...) " + match4.ToString());
+                            }
+
+                            // System.Console.WriteLine("Documento: " + Docs.TheDocuments[kvp.Value].GetTitle());
+                            // System.Console.WriteLine("Recurriendo a combinar snippets:" + match4.ToString() + " con " + match5.ToString());
+
+                            TheSnippets.Add(kvp.Value, CombinedSnippet);
+                            GotSnippet = true;
+                            break;
                         }
 
-                        // System.Console.WriteLine("Recurriendo a combinar snippets:" + CombinedSnippet);
-
-                        TheSnippets.Add(kvp.Value, CombinedSnippet);
-                        GotSnippet = true;
-                        break;
                     }
                 }
 
@@ -441,9 +449,13 @@ public class Query
                             str3 = kv3.Key;
                             val3 = kv3.Value;
                         }
+                        else continue;
                         
-                        System.Console.WriteLine("Documento: " + Docs.TheDocuments[kvp.Value].GetTitle());
-                        System.Console.WriteLine("Buscando la palabra: " + str3);
+                        val3 = 0;
+                        check3.Add(kv3.Key);
+
+                        // System.Console.WriteLine("Documento: " + Docs.TheDocuments[kvp.Value].GetTitle());
+                        // System.Console.WriteLine("Buscando la palabra: " + str3);
                     
                         if(str3 != "" && text.Contains(str3)) {
                             val3 = 0;
@@ -460,8 +472,6 @@ public class Query
                             }
                         }
 
-                        val3 = 0;
-                        check3.Add(kv3.Key);
                     }
 
                     break;

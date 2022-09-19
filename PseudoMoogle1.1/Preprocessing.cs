@@ -56,8 +56,6 @@ public class AllDocuments
 
         return IDF;
     }
-
-
 }
 public class Pair
 {

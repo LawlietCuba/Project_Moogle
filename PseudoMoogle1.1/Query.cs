@@ -176,11 +176,11 @@ public class Query
             }
         }
 
-        // foreach(var kvp in qTFIDF) {
-        //     if(kvp.Key.Length <= 2 && qTFIDF.Count > 1) {
-        //         qTFIDF[kvp.Key] = 0;
-        //     }
-        // }
+        foreach(var kvp in qTFIDF) {
+            if(kvp.Key.Length <= 2 && qTFIDF.Count > 1) {
+                qTFIDF[kvp.Key] = 0;
+            }
+        }
 
         return qTFIDF;
     }
@@ -357,7 +357,7 @@ public class Query
             var check1 = new List<string>();
             foreach(var kv in qTFIDF) {
                 if(check1.Contains(kv.Key)) continue;
-                if(val1 <= kv.Value) {
+                if(val1 < kv.Value) {
                     str1 = kv.Key;
                     val1 = kv.Value;
                 }
@@ -369,7 +369,7 @@ public class Query
                 var check2 = new List<string>();
                 foreach(var kv2 in qTFIDF) {
                     if(check1.Contains(kv2.Key) || check2.Contains(kv2.Key)) continue;
-                    if(val2 <= kv2.Value) {
+                    if(val2 < kv2.Value) {
                         str2 = kv2.Key;
                         val2 = kv2.Value;
                     }
@@ -377,9 +377,9 @@ public class Query
                     val2 = 0;
                     check2.Add(str2);
 
-                    // System.Console.WriteLine("Documento: " + Docs.TheDocuments[kvp.Value].GetTitle());
-                    // System.Console.WriteLine("Buscando las palabras: " + str1 + " y " + str2);
-                    if(text.Contains(str1) && text.Contains(str2)) {
+                    if(text.Contains(str1) && text.Contains(str2) && str1 != "" && str2 != "") {
+                        System.Console.WriteLine("Documento: " + Docs.TheDocuments[kvp.Value].GetTitle());
+                        System.Console.WriteLine("Buscando las palabras: " + str1 + " y " + str2);
 
                         Regex snippet = new Regex(@"\w*\W+" + (str1) + @"\s+.*" + (str2) + @"(\W+\w+){10}", RegexOptions.IgnoreCase);
 
@@ -420,7 +420,7 @@ public class Query
                             CombinedSnippet += match5.ToString() + " (...) " + match4.ToString();
                         }
 
-                        System.Console.WriteLine("Recurriendo a combinar snippets:" + CombinedSnippet);
+                        // System.Console.WriteLine("Recurriendo a combinar snippets:" + CombinedSnippet);
 
                         TheSnippets.Add(kvp.Value, CombinedSnippet);
                         GotSnippet = true;
@@ -441,19 +441,27 @@ public class Query
                             str3 = kv3.Key;
                             val3 = kv3.Value;
                         }
+                        
+                        System.Console.WriteLine("Documento: " + Docs.TheDocuments[kvp.Value].GetTitle());
+                        System.Console.WriteLine("Buscando la palabra: " + str3);
                     
-                        val3 = 0;
-                        check3.Add(str3);
+                        if(str3 != "" && text.Contains(str3)) {
+                            val3 = 0;
+                            check3.Add(str3);
 
-                        Regex snippet3 = new Regex(@"\w*\W+"+ str3 + @"(\W+\w+){10}", RegexOptions.IgnoreCase);
+                            Regex snippet3 = new Regex(@"\w*\W+"+ str3 + @"(\W+\w+){10}", RegexOptions.IgnoreCase);
 
-                        Match match3 = snippet3.Match(text);
+                            Match match3 = snippet3.Match(text);
 
-                        if(match3.Success){
-                            TheSnippets.Add(kvp.Value, match3.ToString());
-                            GotSnippet = true;
-                            break;
+                            if(match3.Success){
+                                TheSnippets.Add(kvp.Value, match3.ToString());
+                                GotSnippet = true;
+                                break;
+                            }
                         }
+
+                        val3 = 0;
+                        check3.Add(kv3.Key);
                     }
 
                     break;

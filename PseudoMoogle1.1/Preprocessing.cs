@@ -57,66 +57,6 @@ public class AllDocuments
         return IDF;
     }
 
-/*
-    public List<string> GetSnippet(Dictionary<string,double> qTFIDF, int posDocument) {
-        // Busquemos la palabra con mayor peso en la query que le haremos corresponder al snippet
-
-        string MIWOQ = "No hay"; // Most Important word for query
-        double Importance = 0;
-        foreach(KeyValuePair < string, double> kvp in qTFIDF) {
-            if(this.TFIDF[posDocument].ContainsKey(kvp.Key)) {
-                if(Importance < kvp.Value) {
-                    MIWOQ = kvp.Key;
-                    Importance = kvp.Value;
-                }
-            }
-        }
-
-        var snippet = new List<string> ();
-
-        // Buscamos la posicion de la palabra mas importante para la query en su texto
-
-        int posMIWOQ = 0;
-        for(int j = 0; j<this.TheDocuments[posDocument].SplittedText.Length; j++) {
-            if(this.TheDocuments[posDocument].SplittedText[j] == MIWOQ) {
-                posMIWOQ = j;
-                break;
-            }
-        }
-
-        System.Console.WriteLine();
-        System.Console.WriteLine(MIWOQ + " posicion " + posMIWOQ);
-        System.Console.WriteLine();
-
-        
-        // Aqui decidimos el max numero de palabras que tendra el snippet con centro en la MIWOF
-        var SnippetRange = RangeOfSnippet(20 , posMIWOQ, posMIWOQ, 
-        this.TheDocuments[posDocument].SplittedText.Length);
-
-        for(int j = SnippetRange.first; j<=SnippetRange.second; j++) {
-            snippet.Add(this.TheDocuments[posDocument].SplittedText[j]);
-        }
-
-
-        return snippet;
-    }
-    Pair RangeOfSnippet(int CountOfWords, int left, int right, int len) {
-        if(CountOfWords == 0) return new Pair(left, right);
-        if(left - 1 >= 0 && right + 1 < len) {
-            return RangeOfSnippet(CountOfWords-=2, left -1 , right + 1, len);
-        }
-        if(left - 1 >= 0 && right + 1 >= len) {
-            return RangeOfSnippet(CountOfWords--, left - 1, right, len);
-        }
-        if(left - 1 < 0 && right + 1 < len) {
-            return RangeOfSnippet(CountOfWords--, left, right + 1, len);
-        }
-
-        return new Pair(left, right);
-    }
-}
-
-*/
 
 }
 public class Pair

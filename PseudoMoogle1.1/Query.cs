@@ -176,11 +176,11 @@ public class Query
             }
         }
 
-        foreach(var kvp in qTFIDF) {
-            if(kvp.Key.Length <= 2 && qTFIDF.Count > 1) {
-                qTFIDF[kvp.Key] = 0;
-            }
-        }
+        // foreach(var kvp in qTFIDF) {
+        //     if(kvp.Key.Length <= 2 && qTFIDF.Count > 1) {
+        //         qTFIDF[kvp.Key] = 0;
+        //     }
+        // }
 
         return qTFIDF;
     }
@@ -381,7 +381,7 @@ public class Query
                     // System.Console.WriteLine("Buscando las palabras: " + str1 + " y " + str2);
                     if(text.Contains(str1) && text.Contains(str2)) {
 
-                        Regex snippet = new Regex(@"\w*\s+" + (str1) + @"\s+.*" + (str2) + @"\s+.*", RegexOptions.IgnoreCase);
+                        Regex snippet = new Regex(@"\w*\W+" + (str1) + @"\s+.*" + (str2) + @"(\W+\w+){10}", RegexOptions.IgnoreCase);
 
                         Match match = snippet.Match(text);
 
@@ -391,7 +391,7 @@ public class Query
                             break;
                         }
 
-                        Regex snippet2 = new Regex(@"\w*\s+" + (str2) + @"\s+.*" + (str1) + @"\s+.*", RegexOptions.IgnoreCase);
+                        Regex snippet2 = new Regex(@"\w*\W+" + (str2) + @"\s+.*" + (str1) + @"(\W+\w+){10}", RegexOptions.IgnoreCase);
 
                         Match match2 = snippet2.Match(text);
 
@@ -400,6 +400,31 @@ public class Query
                             GotSnippet = true;
                             break;
                         }
+
+                        // Si no encuentra juntas dichas palabras entonces combinaremos pedazos de texto donde aparezcan
+                        // ambas
+
+                        string CombinedSnippet = "";
+
+                        Regex snippet4 = new Regex(@"\w*\W+"+ str1 + @"(\W+\w+){10}", RegexOptions.IgnoreCase);
+
+                        Match match4 = snippet4.Match(text);
+
+                        Regex snippet5 = new Regex(@"\w*\W+"+ str2 + @"(\W+\w+){10}", RegexOptions.IgnoreCase);
+                        Match match5 = snippet5.Match(text);
+
+                        if(match4.Index <= match5.Index) {
+                            CombinedSnippet += match4.ToString() + " (...) " + match5.ToString();
+                        }
+                        else {
+                            CombinedSnippet += match5.ToString() + " (...) " + match4.ToString();
+                        }
+
+                        System.Console.WriteLine("Recurriendo a combinar snippets:" + CombinedSnippet);
+
+                        TheSnippets.Add(kvp.Value, CombinedSnippet);
+                        GotSnippet = true;
+                        break;
                     }
                 }
 
@@ -420,7 +445,7 @@ public class Query
                         val3 = 0;
                         check3.Add(str3);
 
-                        Regex snippet3 = new Regex(@"\w*\s+"+ str3 + @"\s+.*", RegexOptions.IgnoreCase);
+                        Regex snippet3 = new Regex(@"\w*\W+"+ str3 + @"(\W+\w+){10}", RegexOptions.IgnoreCase);
 
                         Match match3 = snippet3.Match(text);
 

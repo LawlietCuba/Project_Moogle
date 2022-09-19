@@ -26,6 +26,6 @@ foreach(var v in Ranking) {
     if(counter > AmountToShow) break;
 }
 
-if(counter <= 10) {
+// if(counter <= 10) {
     System.Console.WriteLine("Quizas quisiste decir " + Results.GetSuggestion());
-}
+// }

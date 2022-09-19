@@ -176,6 +176,11 @@ public class Query
             }
         }
 
+        foreach(var kvp in qTFIDF) {
+            if(kvp.Key.Length <= 2 && qTFIDF.Count > 1) {
+                kvp.Value = 0;
+            }
+        }
 
         return qTFIDF;
     }

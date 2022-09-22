@@ -1,4 +1,4 @@
-namespace MyMoogleEngine;
+namespace MoogleEngine;
 
 using System.Text.RegularExpressions;   
 public class Query
@@ -380,26 +380,21 @@ public class Query
                     check2.Add(str2);
 
                     if(str1 != "" && str2 != "") {
-                        // System.Console.WriteLine("Documento: " + Docs.TheDocuments[kvp.Value].GetTitle());
-                        // System.Console.WriteLine("Buscando las palabras: " + str1 + " y " + str2);
-
-                        Regex snippet = new Regex(@"\w*\W+" + (str1) + @"\s+.*" + (str2) + @"(\W+\w+){1,20}", RegexOptions.IgnoreCase);
+                        Regex snippet = new Regex(@"\w*\W+" + (str1) + @"\s+.*" + (str2) + @"(\W+\w+){1,40}", RegexOptions.IgnoreCase);
 
                         Match match = snippet.Match(text);
 
                         if(match.Success){
-                            // System.Console.WriteLine("Match");
                             TheSnippets.Add(kvp.Value, match.ToString());
                             GotSnippet = true;
                             break;
                         }
 
-                        Regex snippet2 = new Regex(@"\w*\W+" + (str2) + @"\s+.*" + (str1) + @"(\W+\w+){1,20}", RegexOptions.IgnoreCase);
+                        Regex snippet2 = new Regex(@"\w*\W+" + (str2) + @"\s+.*" + (str1) + @"(\W+\w+){1,40}", RegexOptions.IgnoreCase);
 
                         Match match2 = snippet2.Match(text);
 
                         if(match2.Success){
-                            // System.Console.WriteLine("Match2");
                             TheSnippets.Add(kvp.Value, match2.ToString());
                             GotSnippet = true;
                             break;
@@ -410,25 +405,21 @@ public class Query
 
                         string CombinedSnippet = "";
 
-                        Regex snippet4 = new Regex(@"\w*\W+"+ str1 + @"(\W+\w+){1,20}", RegexOptions.IgnoreCase);
+                        Regex snippet4 = new Regex(@"\w*\W+"+ str1 + @"(\W+\w+){1,40}", RegexOptions.IgnoreCase);
 
                         Match match4 = snippet4.Match(text);
 
-                        Regex snippet5 = new Regex(@"\w*\W+"+ str2 + @"(\W+\w+){1,20}", RegexOptions.IgnoreCase);
+                        Regex snippet5 = new Regex(@"\w*\W+"+ str2 + @"(\W+\w+){1,40}", RegexOptions.IgnoreCase);
 
                         Match match5 = snippet5.Match(text);
 
                         if(match4.Success && match5.Success) {
-                            System.Console.WriteLine("Match4 and Match5");
                             if(match4.Index <= match5.Index) {
                                 CombinedSnippet += (match4.ToString() + " (...) " + match5.ToString());
                             }
                             else {
                                 CombinedSnippet += (match5.ToString() + " (...) " + match4.ToString());
                             }
-
-                            // System.Console.WriteLine("Documento: " + Docs.TheDocuments[kvp.Value].GetTitle());
-                            // System.Console.WriteLine("Recurriendo a combinar snippets:" + match4.ToString() + " con " + match5.ToString());
 
                             TheSnippets.Add(kvp.Value, CombinedSnippet);
                             GotSnippet = true;
@@ -456,19 +447,16 @@ public class Query
                         val3 = 0;
                         check3.Add(kv3.Key);
 
-                        // System.Console.WriteLine("Documento: " + Docs.TheDocuments[kvp.Value].GetTitle());
-                        // System.Console.WriteLine("Buscando la palabra: " + str3);
                     
                         if(str3 != "" ) {
                             val3 = 0;
                             check3.Add(str3);
 
-                            Regex snippet3 = new Regex(@"\w*\W+"+ str3 + @"(\W+\w+){1,20}", RegexOptions.IgnoreCase);
+                            Regex snippet3 = new Regex(@"\w*\W+"+ str3 + @"(\W+\w+){1,40}", RegexOptions.IgnoreCase);
 
                             Match match3 = snippet3.Match(text);
 
                             if(match3.Success){
-                                // System.Console.WriteLine("Match3");
                                 TheSnippets.Add(kvp.Value, match3.ToString());
                                 GotSnippet = true;
                                 break;

@@ -23,7 +23,7 @@ public class Moogle
 
         SearchResult ssult = new SearchResult();
 
-        if(items.Length < 5) {
+        if(items.Length == 0) {
             ssult = new SearchResult(items, quer.GetSuggestion());
         }
         else  {

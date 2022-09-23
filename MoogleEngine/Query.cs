@@ -4,14 +4,23 @@ using System.Text.RegularExpressions;
 public class Query
 {
     private string query;
+
     private string[] TokensQ;
+
     private Dictionary<string,double> qTFIDF;
+
     private List<KeyValuePair< double,int >> RankingList;
-    private int HowManyResults;                                 
+
+    private int HowManyResults;             
+
     private string Suggestion;
+
     private Dictionary<string,string> Closeness;
+
     private List<string> Pow;
+
     private Dictionary<int,string> TheSnippets;
+
     public Query(string query, AllDocuments Docs) {
         this.query = query;
         this.TokensQ = ProcessQuery(this.query);
@@ -276,7 +285,7 @@ public class Query
         bool Pow_test = true;
         if(Pow.Count != 0) {
             foreach(string s in Pow) {
-                if(!Vector.ContainsKey(s)) {
+                if(Vector.ContainsKey(s) && Vector[s] == 0) {
                     Pow_test = false;
                 }
             }
@@ -290,6 +299,12 @@ public class Query
     
     private string GiveASuggestion(AllDocuments Docs) {
         string theSug = "";
+        string theOriginal = "";
+
+        foreach(var kvp in qTFIDF) {
+            theOriginal += kvp.Key;
+            theOriginal += " ";
+        }
 
         foreach(var kvp in qTFIDF) {
             if(kvp.Value == 0.4) {
@@ -332,8 +347,8 @@ public class Query
                 theSug += " ";
             }
         }
-
-        return theSug;
+        
+        return theSug==theOriginal ? "Lo sentimos, no hay resultados para su búsqueda" : "¿Quizás quisiste decir " + theSug + "?";
     }
 
     private void CreateSnippets(AllDocuments Docs) {
@@ -484,14 +499,14 @@ public class Query
             source = temp;
         }
     
-        var m = target.Length;
-        var n = source.Length;
+        int m = target.Length;
+        int n = source.Length;
         var distance = new int[2, m + 1];
         // Initialize the distance matrix
-        for(var j = 1; j <= m; j++) distance[0, j] = j;
+        for(int j = 1; j <= m; j++) distance[0, j] = j;
 
         var currentRow = 0;
-        for(var i = 1; i <= n; ++i){
+        for(int i = 1; i <= n; ++i){
             currentRow = i & 1;
             distance[currentRow, 0] = i;
             var previousRow = currentRow ^ 1;

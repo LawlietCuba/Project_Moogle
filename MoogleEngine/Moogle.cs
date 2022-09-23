@@ -1,21 +1,29 @@
 ﻿namespace MoogleEngine;
 
+public class Preprocess {
+    public MyDirectory directory;
+    public AllDocuments Docs;
+
+    public Preprocess (){
+        this.directory = new MyDirectory();
+        this.Docs = new AllDocuments(directory.GetDirectories());
+    }
+}
+
 public class Moogle
 {
+
+    public static Preprocess prepro;
     public static SearchResult Query(string query) {
 
-        var Directorio = new MyDirectory();
-
-        var Docs = new AllDocuments(Directorio.GetDirectories());
-
-        Query quer = new Query(query, Docs);
+        Query quer = new Query(query, prepro.Docs);
         
         SearchItem[] items = new SearchItem[quer.GetRankingList().Count];
 
         int cont = 0;   
         foreach(var kvp in quer.GetRankingList()) {
                 if(kvp.Key != 0) {
-                    items[cont] = new SearchItem(Docs.TheDocuments[kvp.Value].GetTitle(), 
+                    items[cont] = new SearchItem(prepro.Docs.TheDocuments[kvp.Value].GetTitle(), 
                     quer.GetSnippet(kvp.Value), (float)kvp.Key);
                     cont++;
                 }

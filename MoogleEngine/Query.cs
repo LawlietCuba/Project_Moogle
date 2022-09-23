@@ -18,6 +18,7 @@ public class Query
     private Dictionary<string,string> Closeness;
 
     private List<string> Pow;
+    private List<string> Excla;
 
     private Dictionary<int,string> TheSnippets;
 
@@ -36,6 +37,7 @@ public class Query
 
         this.Closeness = new Dictionary<string, string>();
         this.Pow = new List<string>();
+        this.Excla = new List<string>();
         DoOperators(query);
 
         this.RankingList = new List<KeyValuePair<double, int>>();
@@ -98,7 +100,7 @@ public class Query
     private void DoOperators(string text) {
         //Asteriscos
 
-        Regex aster = new Regex(@"(\*+)\s*(\w+)");
+        Regex aster = new Regex(@"(\*+)\W*(\w+)");
 
         MatchCollection matches = aster.Matches(text);
 
@@ -110,7 +112,7 @@ public class Query
 
         //Operador de cercania
 
-        Regex closen = new Regex(@"(\w+)\s*~\s*(\w+)");
+        Regex closen = new Regex(@"(\w+)\W*~\W*(\w+)");
 
         matches = closen.Matches(text);
 
@@ -124,19 +126,19 @@ public class Query
 
         // Exclamation
 
-        Regex excla = new Regex(@"\s*(\!+)\s*(\w+)");
+        Regex excla = new Regex(@"(\!+)\W*(\w+)");
 
         matches = excla.Matches(text);
 
         foreach(Match m in matches) {
             GroupCollection groups = m.Groups;
             string target = TokenizeWord(groups[2].ToString());
-            qTFIDF[target] = 0;
+            Excla.Add(target);
         }
 
         // Pow
 
-        Regex pow = new Regex(@"\s*(\^+)\s*(\w+)");
+        Regex pow = new Regex(@"(\^+)\W*(\w+)");
 
         matches = pow.Matches(text);
 
@@ -185,11 +187,11 @@ public class Query
             }
         }
 
-        foreach(var kvp in qTFIDF) {
-            if(kvp.Key.Length <= 2 && qTFIDF.Count > 1) {
-                qTFIDF[kvp.Key] = 0;
-            }
-        }
+        // foreach(var kvp in qTFIDF) {
+        //     if(kvp.Key.Length <= 2 && qTFIDF.Count > 1) {
+        //         qTFIDF[kvp.Key] = 0;
+        //     }
+        // }
 
         return qTFIDF;
     }
@@ -212,36 +214,44 @@ public class Query
 
                 // Aqui aplicaremos el operador de cercania
 
-                if(Closeness.Count != 0) {
-                    foreach(var kvp in Closeness) {
+                foreach(var kvp in Closeness) {
+                    
+                    var lis1 = AllIndexesOf(Docs.TheDocuments[j].GetText(), kvp.Key);
+                    var lis2 = AllIndexesOf(Docs.TheDocuments[j].GetText(), kvp.Value);
+
+                    double Min_Dist = int.MaxValue;
+                    foreach(int x in lis1) {
+                        foreach(int y in lis2) {
+                            Min_Dist = Math.Min(Math.Abs(x-y), Min_Dist);
+                        }
+                    }
+
+                    // Utilizando la funcion 1/x...
+                    if(Min_Dist != int.MaxValue) {
+                        // 10 es escogido arbitrariamente para ser la distancia promedio entre 
+                        // dos palabras que deberian estar juntas en el texto segun la busqueda
+                        // Podria hacerse una AI por progresion lineal que de un valor aproximado
+                        // usando linear_regresion
+
+
+                        Score *= (1+10/Min_Dist);
                         
-                        var lis1 = AllIndexesOf(Docs.TheDocuments[j].GetText(), kvp.Key);
-                        var lis2 = AllIndexesOf(Docs.TheDocuments[j].GetText(), kvp.Value);
+                    }
+                }                
 
-                        double Min_Dist = int.MaxValue;
-                        foreach(int x in lis1) {
-                            foreach(int y in lis2) {
-                                Min_Dist = Math.Min(Math.Abs(x-y), Min_Dist);
-                            }
-                        }
-
-                        // Utilizando la funcion 1/x...
-                        if(Min_Dist != int.MaxValue) {
-                            // 10 es escogido arbitrariamente para ser la distancia promedio entre 
-                            // dos palabras que deberian estar juntas en el texto segun la busqueda
-                            // Podria hacerse una AI por progresion lineal que de un valor aproximado
-                            // usando linear_regresion
-
-                            //combate ~ aliados
-
-                            Score *= (1+10/Min_Dist);
-                            
-                        }
-                    }                
+                foreach(string s in Excla) {
+                    Regex exc = new Regex(@"\s+" + s + @"\s+", RegexOptions.IgnoreCase);
+                    Match match = exc.Match(Docs.TheDocuments[j].GetText());
+                    if(match.Success) {
+                        Score = 0;
+                        break;  
+                    }
                 }
 
-                RankingList.Add(new KeyValuePair<double, int>(Score, j));
-                HowManyResults++;
+                if(Score != 0) {
+                    RankingList.Add(new KeyValuePair<double, int>(Score, j));
+                    HowManyResults++;
+                } 
             }  
         }
 
@@ -282,19 +292,15 @@ public class Query
 
         // Ahora apliquemos el operador de potencia
 
-        bool Pow_test = true;
         if(Pow.Count != 0) {
             foreach(string s in Pow) {
-                if(Vector.ContainsKey(s) && Vector[s] == 0) {
-                    Pow_test = false;
+                if(Vector[s] == 0) {
+                    value = 0;
                 }
             }
         }
 
-        if(Pow_test == false) value = 0;
-
         return value;
-        
     }
     
     private string GiveASuggestion(AllDocuments Docs) {
@@ -395,7 +401,7 @@ public class Query
                     check2.Add(str2);
 
                     if(str1 != "" && str2 != "") {
-                        Regex snippet = new Regex(@"\w*\W+" + (str1) + @"\s+.*" + (str2) + @"(\W+\w+){1,40}", RegexOptions.IgnoreCase);
+                        Regex snippet = new Regex(@"(\w+\W+){0,2}" + (str1) + @"\s+.*" + (str2) + @"(\W+\w+){0,40}", RegexOptions.IgnoreCase);
 
                         Match match = snippet.Match(text);
 
@@ -405,7 +411,7 @@ public class Query
                             break;
                         }
 
-                        Regex snippet2 = new Regex(@"\w*\W+" + (str2) + @"\s+.*" + (str1) + @"(\W+\w+){1,40}", RegexOptions.IgnoreCase);
+                        Regex snippet2 = new Regex(@"(\w+\W+){0,2}" + (str2) + @"\s+.*" + (str1) + @"(\W+\w+){0,40}", RegexOptions.IgnoreCase);
 
                         Match match2 = snippet2.Match(text);
 
@@ -420,11 +426,11 @@ public class Query
 
                         string CombinedSnippet = "";
 
-                        Regex snippet4 = new Regex(@"\w*\W+"+ str1 + @"(\W+\w+){1,40}", RegexOptions.IgnoreCase);
+                        Regex snippet4 = new Regex(@"(\w+\W+){0,2}"+ str1 + @"(\W+\w+){0,40}", RegexOptions.IgnoreCase);
 
                         Match match4 = snippet4.Match(text);
 
-                        Regex snippet5 = new Regex(@"\w*\W+"+ str2 + @"(\W+\w+){1,40}", RegexOptions.IgnoreCase);
+                        Regex snippet5 = new Regex(@"(\w+\W+){0,2}"+ str2 + @"(\W+\w+){0,40}", RegexOptions.IgnoreCase);
 
                         Match match5 = snippet5.Match(text);
 
@@ -464,10 +470,7 @@ public class Query
 
                     
                         if(str3 != "" ) {
-                            val3 = 0;
-                            check3.Add(str3);
-
-                            Regex snippet3 = new Regex(@"\w*\W+"+ str3 + @"(\W+\w+){1,40}", RegexOptions.IgnoreCase);
+                            Regex snippet3 = new Regex(@"(\w+\W+){0,2}"+ str3 + @"(\W+\w+){0,40}", RegexOptions.IgnoreCase);
 
                             Match match3 = snippet3.Match(text);
 
@@ -477,7 +480,6 @@ public class Query
                                 break;
                             }
                         }
-                        
                         if(GotSnippet == true) break;
                     }
                 }
